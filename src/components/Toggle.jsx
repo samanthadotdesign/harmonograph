@@ -27,19 +27,19 @@ export default function Toggle({ label, checked, onChange }) {
           <path
             d="M9.5 29.5C9.5 18.4543 18.4543 9.5 29.5 9.5C40.5457 9.5 49.5 18.4543 49.5 29.5"
             fill="none"
-            stroke="#3a3a3a"
+            stroke="var(--line-2)"
           />
           <path
             d="M10.757 15.408L7.89 13.4"
             fill="none"
-            stroke="#f5a623"
+            stroke="var(--amber)"
             strokeWidth="1.2"
             strokeLinecap="round"
           />
           <path
             d="M47.243 15.408L50.11 13.4"
             fill="none"
-            stroke="#5c4114"
+            stroke="var(--amber-dim)"
             strokeWidth="1.2"
             strokeLinecap="round"
           />
@@ -48,7 +48,7 @@ export default function Toggle({ label, checked, onChange }) {
             y1={CENTER}
             x2={needleX}
             y2={needleY}
-            stroke="#e8e8e8"
+            stroke="var(--txt)"
             strokeWidth="2"
             strokeLinecap="round"
           />

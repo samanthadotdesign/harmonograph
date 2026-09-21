@@ -3,6 +3,7 @@ import Dial from "./components/Dial.jsx";
 import Toggle from "./components/Toggle.jsx";
 import Section from "./components/Section.jsx";
 import Presets from "./components/Presets.jsx";
+import ViewGizmo from "./components/ViewGizmo.jsx";
 import { buildCurve } from "./lib/curve.js";
 import { render } from "./lib/render.js";
 import {
@@ -52,6 +53,7 @@ export default function App() {
   const [wheelActive, setWheelActive] = useState(false);
   const [autoRotate, setAutoRotate] = useState(() => boot?.autoRotate === true);
   const [animateLine, setAnimateLine] = useState(() => boot?.animateLine === true);
+  const [showPlanes, setShowPlanes] = useState(() => boot?.showPlanes !== false);
   const [lineProgress, setLineProgress] = useState(() => boot?.animateLine === true ? 0 : 1);
   const [panel, setPanel] = useState(false);
   const [mobile, setMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
@@ -70,7 +72,9 @@ export default function App() {
 
   const dirty = active >= 0 && slots[active] ? !sameDials(P, slots[active].P) : false;
   const shadowsOn = P.shadows > 0.005;
-  persistRef.current = { slots, theme, active, autoRotate, animateLine, live: { P, cam } };
+  persistRef.current = {
+    slots, theme, active, autoRotate, animateLine, showPlanes, live: { P, cam },
+  };
 
   /* ------------------------------ actions ----------------------------- */
 
@@ -97,16 +101,20 @@ export default function App() {
     }));
   }, []);
 
-  const savePNG = useCallback(() => {
-    canvasRef.current?.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "harmonograph.png";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    });
+  const setPlanes = useCallback((enabled) => {
+    setShowPlanes(enabled);
+    if (!enabled) setShadows(false);
+  }, [setShadows]);
+
+  const snapView = useCallback((view) => {
+    setAutoRotate(false);
+    setCam((current) => ({
+      ...current,
+      yaw: view.yaw,
+      pitch: view.pitch,
+      ...(Number.isFinite(view.panX) ? { panX: view.panX } : {}),
+      ...(Number.isFinite(view.panY) ? { panY: view.panY } : {}),
+    }));
   }, []);
 
   const copySettings = useCallback(() => {
@@ -149,34 +157,6 @@ export default function App() {
     setActive((a) => (a === i ? -1 : a));
   }, []);
 
-  /* ----------------------------- shortcuts ---------------------------- */
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.metaKey || e.ctrlKey) return;
-      const el = document.activeElement;
-      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
-
-      const slot = codeToSlot(e.code);
-      if (slot >= 0) {
-        e.preventDefault();
-        if (e.altKey) clearSlot(slot);
-        else if (e.shiftKey) saveSlot(slot);
-        else recallSlot(slot);
-        return;
-      }
-      if (e.altKey) return;
-
-      const k = e.key.toLowerCase();
-      if (k === "c") { e.preventDefault(); setPanel((value) => !value); }
-      else if (k === "r") { e.preventDefault(); reset(); }
-      else if (k === "s") { e.preventDefault(); savePNG(); }
-      else if (k === "t") { e.preventDefault(); setTheme((value) => (value === "dark" ? "light" : "dark")); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [reset, savePNG, saveSlot, recallSlot, clearSlot]);
-
   /* ---------------------------- persistence --------------------------- */
 
   /* Save control changes after they settle. Camera persistence is separate so
@@ -184,7 +164,7 @@ export default function App() {
   useEffect(() => {
     const id = setTimeout(() => saveState(persistRef.current), 250);
     return () => clearTimeout(id);
-  }, [slots, theme, active, P, autoRotate, animateLine]);
+  }, [slots, theme, active, P, autoRotate, animateLine, showPlanes]);
 
   useEffect(() => {
     if (autoRotate) return undefined;
@@ -254,6 +234,94 @@ export default function App() {
     [P.fx, P.fy, P.fz, P.depth, P.sweep, P.turns, P.decay, P.mix, P.phase, size.w, size.h]
   );
 
+  const savePNG = useCallback(async () => {
+    const current = canvasRef.current;
+    if (!current) return;
+
+    const makeCanvas = () => {
+      const output = document.createElement("canvas");
+      output.width = current.width;
+      output.height = current.height;
+      return output;
+    };
+
+    /* Freeze the current frame, then render the three exact axis views without
+       moving the on-screen camera. */
+    const currentFrame = makeCanvas();
+    currentFrame.getContext("2d").drawImage(current, 0, 0);
+
+    const dpr = current.width / size.w;
+    const views = [
+      ["current", currentFrame],
+      ["xy", { yaw: 0, pitch: 0 }],
+      ["xz", { yaw: 0, pitch: -HP }],
+      ["zy", { yaw: HP, pitch: 0 }],
+    ].map(([name, view]) => {
+      if (view instanceof HTMLCanvasElement) return [name, view];
+      const output = makeCanvas();
+      render(output.getContext("2d"), {
+        curve,
+        P,
+        cam: { ...cam, ...view },
+        W: size.w,
+        H: size.h,
+        dpr,
+        dragging: false,
+        theme,
+        panelLift,
+        progress: lineProgress,
+        showPlanes,
+      });
+      return [name, output];
+    });
+
+    const files = await Promise.all(
+      views.map(([name, output]) =>
+        new Promise((resolve) => output.toBlob((blob) => resolve([name, blob]), "image/png"))
+      )
+    );
+
+    files.forEach(([name, blob]) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `harmonograph-${name}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    });
+  }, [P, cam, curve, lineProgress, panelLift, showPlanes, size, theme]);
+
+  /* ----------------------------- shortcuts ---------------------------- */
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey) return;
+      const el = document.activeElement;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+
+      const slot = codeToSlot(e.code);
+      if (slot >= 0) {
+        e.preventDefault();
+        if (e.altKey) clearSlot(slot);
+        else if (e.shiftKey) saveSlot(slot);
+        else recallSlot(slot);
+        return;
+      }
+      if (e.altKey) return;
+
+      const k = e.key.toLowerCase();
+      if (k === "c") { e.preventDefault(); setPanel((value) => !value); }
+      else if (k === "r") { e.preventDefault(); reset(); }
+      else if (k === "s") { e.preventDefault(); savePNG(); }
+      else if (k === "t") { e.preventDefault(); setTheme((value) => (value === "dark" ? "light" : "dark")); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [reset, savePNG, saveSlot, recallSlot, clearSlot]);
+
   useEffect(() => {
     if (!animateLine) {
       setLineProgress(1);
@@ -281,9 +349,9 @@ export default function App() {
     cv.height = Math.round(size.h * dpr);
     render(cv.getContext("2d"), {
       curve, P, cam, W: size.w, H: size.h, dpr, dragging, theme, panelLift,
-      progress: lineProgress,
+      progress: lineProgress, showPlanes,
     });
-  }, [curve, P, cam, size, dragging, theme, panelLift, lineProgress]);
+  }, [curve, P, cam, size, dragging, theme, panelLift, lineProgress, showPlanes]);
 
   const beginMultiGesture = () => {
     const [a, b] = Array.from(pointers.current.values());
@@ -411,7 +479,7 @@ export default function App() {
   const toggle = (title) => setOpen((o) => ({ ...o, [title]: !o[title] }));
 
   return (
-    <div className="stage">
+    <div className={`stage ${theme}`}>
       <canvas
         ref={canvasRef}
         onPointerDown={onDown}
@@ -491,7 +559,9 @@ export default function App() {
             ))}
 
             <Section title="View" open={open.View} onToggle={() => toggle("View")}>
+              <ViewGizmo cam={cam} onSnap={snapView} home={HOME_CAM} />
               <div className="dials">
+                <Toggle label="planes" checked={showPlanes} onChange={setPlanes} />
                 <Toggle label="shadows" checked={shadowsOn} onChange={setShadows} />
                 <Toggle label="auto rotation" checked={autoRotate} onChange={setAutoRotate} />
                 <Toggle label="line animation" checked={animateLine} onChange={setAnimateLine} />

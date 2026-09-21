@@ -6,6 +6,7 @@ import { THEMES } from "./theme.js";
 
 export function render(ctx, {
   curve, P, cam, W, H, dpr, dragging, theme, panelLift = 0, progress = 1,
+  showPlanes = true,
 }) {
   const T = THEMES[theme] ?? THEMES.light;
   const { pts, n, sx, sy, sz, ax, ay } = curve;
@@ -125,16 +126,18 @@ export function render(ctx, {
     ctx.fillText(text, o[0], o[1]);
   };
 
-  [["z", depthOf(0, 0, WL.z)], ["y", depthOf(0, WL.y, 0)], ["x", depthOf(WL.x, 0, 0)]]
-    .sort((a, b) => b[1] - a[1])
-    .forEach(([axis]) => wall(axis));
+  if (showPlanes) {
+    [["z", depthOf(0, 0, WL.z)], ["y", depthOf(0, WL.y, 0)], ["x", depthOf(WL.x, 0, 0)]]
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([axis]) => wall(axis));
 
-  tag(0, WL.y * 1.17, WL.z * 1.17, "x", T.axisText);
-  tag(WL.x * 1.17, 0, WL.z * 1.17, "y", T.axisText);
-  tag(WL.x * 1.17, WL.y * 1.17, 0, "z", T.axisText);
-  tag(-WL.x * 0.78, -WL.y * 0.78, WL.z, "xy", T.planeText);
-  tag(-WL.x * 0.78, WL.y, -WL.z * 0.78, "xz", T.planeText);
-  tag(WL.x, -WL.y * 0.78, -WL.z * 0.78, "zy", T.planeText);
+    tag(0, WL.y * 1.17, WL.z * 1.17, "x", T.axisText);
+    tag(WL.x * 1.17, 0, WL.z * 1.17, "y", T.axisText);
+    tag(WL.x * 1.17, WL.y * 1.17, 0, "z", T.axisText);
+    tag(-WL.x * 0.78, -WL.y * 0.78, WL.z, "xy", T.planeText);
+    tag(-WL.x * 0.78, WL.y, -WL.z * 0.78, "xz", T.planeText);
+    tag(WL.x, -WL.y * 0.78, -WL.z * 0.78, "zy", T.planeText);
+  }
 
   /* ------------------------------- ink -------------------------------- */
 

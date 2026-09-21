@@ -9,9 +9,6 @@ const RAD = 20;
 const TICKS = 25;
 const SWEEP = 135; // degrees either side of straight up
 
-const AMBER = "#f5a623";
-const AMBER_DIM = "#5c4114";
-
 function polar(deg, r) {
   const a = (deg * Math.PI) / 180;
   return [SIZE / 2 + Math.sin(a) * r, SIZE / 2 - Math.cos(a) * r];
@@ -88,14 +85,14 @@ export default function Dial({ label, value, min, max, step, onChange, display, 
             <line
               key={i}
               x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={lit ? AMBER : AMBER_DIM}
+              stroke={lit ? "var(--amber)" : "var(--amber-dim)"}
               strokeWidth={1.2}
               strokeLinecap="round"
             />
           );
         })}
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={RAD} fill="#1c1c1c" stroke="#3a3a3a" strokeWidth={1} />
-        <line x1={ix} y1={iy} x2={px} y2={py} stroke="#e8e8e8" strokeWidth={2} strokeLinecap="round" />
+        <circle cx={SIZE / 2} cy={SIZE / 2} r={RAD} fill="var(--panel-3)" stroke="var(--line-2)" strokeWidth={1} />
+        <line x1={ix} y1={iy} x2={px} y2={py} stroke="var(--txt)" strokeWidth={2} strokeLinecap="round" />
       </svg>
       <span className="val">{display}</span>
     </div>
