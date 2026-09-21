@@ -147,14 +147,16 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
   const [nr, ng, nb] = T.ink;
   const [fr, fg, fb] = T.inkFar;
   const solid = `rgb(${nr},${ng},${nb})`;
-  const base = (P.ink / 500) * boost * T.alpha;
+  const rawBase = (P.ink / 500) * boost * T.alpha;
+  const base = rawBase * 1.8;
+  const lineWeight = 2.1;
 
   /* orthographic shadows cast onto each wall */
   if (P.shadows > 0.005) {
     openInk();
     ctx.strokeStyle = solid;
-    ctx.globalAlpha = base * P.shadows * 0.85;
-    ctx.lineWidth = P.width * 0.85;
+    ctx.globalAlpha = rawBase * P.shadows * 0.85 * 2.8;
+    ctx.lineWidth = P.width * 0.85 * 2.3;
     for (const plane of ["xy", "xz", "zy"]) {
       for (let i = 0; i < n; i++) {
         const x = pts[i * 3];
@@ -182,7 +184,7 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
     openInk();
     ctx.strokeStyle = solid;
     ctx.globalAlpha = base;
-    ctx.lineWidth = P.width;
+    ctx.lineWidth = P.width * lineWeight;
     ctx.stroke(path);
     closeInk();
     return;
@@ -214,7 +216,7 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
       ng + m * (fg - ng)
     )},${Math.round(nb + m * (fb - nb))})`;
     ctx.globalAlpha = base * (1 + f * (1.1 * u - 0.5));
-    ctx.lineWidth = P.width * (1 + f * (0.7 * u - 0.3));
+    ctx.lineWidth = P.width * lineWeight * (1 + f * (0.7 * u - 0.3));
     ctx.stroke(bins[b]);
   }
   closeInk();

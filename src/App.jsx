@@ -151,7 +151,7 @@ export default function App() {
       if (k === "c") { e.preventDefault(); setPanel((value) => !value); }
       else if (k === "r") { e.preventDefault(); reset(); }
       else if (k === "s") { e.preventDefault(); savePNG(); }
-      else if (k === "t") { e.preventDefault(); setTheme((t) => (t === "dark" ? "light" : "dark")); }
+      else if (k === "t") { e.preventDefault(); setTheme((value) => (value === "dark" ? "light" : "dark")); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -380,16 +380,24 @@ export default function App() {
           <header>
             <span className="name">HARMONOGRAPH</span>
             <span className="keys">C hide · R reset · S png · T theme</span>
+            <button
+              className="theme-toggle"
+              onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            >
+              {theme === "dark" ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3.5" />
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20.25 15.3A8.5 8.5 0 0 1 8.7 3.75 8.5 8.5 0 1 0 20.25 15.3Z" />
+                </svg>
+              )}
+            </button>
           </header>
-
-          <div className="tabs">
-            <button className={"tab" + (theme === "light" ? " on" : "")} onClick={() => setTheme("light")}>
-              Light
-            </button>
-            <button className={"tab" + (theme === "dark" ? " on" : "")} onClick={() => setTheme("dark")}>
-              Dark
-            </button>
-          </div>
 
           <div className="scroll">
             <Section title="Presets — keys 1…0" open={open.Presets} onToggle={() => toggle("Presets")}>
