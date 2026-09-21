@@ -4,9 +4,13 @@ import { THEMES } from "./theme.js";
    curve. Everything is recomputed from the point set each time, which is cheap
    enough that rotating never has to touch the sampler. */
 
-export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLift = 0 }) {
+export function render(ctx, {
+  curve, P, cam, W, H, dpr, dragging, theme, panelLift = 0, progress = 1,
+}) {
   const T = THEMES[theme] ?? THEMES.light;
   const { pts, n, sx, sy, sz, ax, ay } = curve;
+  const reveal = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 1;
+  const drawN = Math.min(n, Math.ceil(n * reveal));
 
   const cy = Math.cos(cam.yaw);
   const sn = Math.sin(cam.yaw);
@@ -56,7 +60,7 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
   ctx.fillStyle = T.bg;
   ctx.fillRect(0, 0, W, H);
 
-  const stride = dragging && n > 70000 ? 2 : 1;
+  const stride = dragging && drawN > 70000 ? 2 : 1;
   const boost = Math.min(2.2, stride * 0.8 + 0.6);
 
   /* ------------------------- coordinate planes ------------------------- */
@@ -134,6 +138,8 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
 
   /* ------------------------------- ink -------------------------------- */
 
+  if (drawN < 2) return;
+
   const openInk = () => {
     ctx.globalCompositeOperation = T.comp;
     ctx.lineCap = "round";
@@ -158,7 +164,7 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
     ctx.globalAlpha = rawBase * P.shadows * 0.85 * 2.8;
     ctx.lineWidth = P.width * 0.85 * 2.3;
     for (const plane of ["xy", "xz", "zy"]) {
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i < drawN; i++) {
         const x = pts[i * 3];
         const y = pts[i * 3 + 1];
         const z = pts[i * 3 + 2];
@@ -170,7 +176,7 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
       }
       const path = new Path2D();
       path.moveTo(ax[0], ay[0]);
-      for (let i = stride; i < n; i += stride) path.lineTo(ax[i], ay[i]);
+      for (let i = stride; i < drawN; i += stride) path.lineTo(ax[i], ay[i]);
       ctx.stroke(path);
     }
     closeInk();
@@ -180,7 +186,7 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
   if (P.fade < 0.01) {
     const path = new Path2D();
     path.moveTo(sx[0], sy[0]);
-    for (let i = stride; i < n; i += stride) path.lineTo(sx[i], sy[i]);
+    for (let i = stride; i < drawN; i += stride) path.lineTo(sx[i], sy[i]);
     openInk();
     ctx.strokeStyle = solid;
     ctx.globalAlpha = base;
@@ -197,7 +203,7 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLi
   const span = zhi - zlo || 1;
   let prevBin = -1;
   let prevIdx = -99;
-  for (let i = 0; i + stride < n; i += stride) {
+  for (let i = 0; i + stride < drawN; i += stride) {
     let b = (((zhi - (sz[i] + sz[i + stride]) * 0.5) / span) * BINS) | 0;
     if (b < 0) b = 0;
     if (b >= BINS) b = BINS - 1;

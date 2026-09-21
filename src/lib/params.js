@@ -52,10 +52,11 @@ export const GROUPS = [
   { title: "Shape", keys: ["fx", "fy", "fz", "depth"] },
   { title: "Motion", keys: ["sweep", "turns", "decay"] },
   { title: "Ink", keys: ["ink", "width", "fade"] },
-  { title: "View", keys: ["shadows", "zoom"] },
 ];
 
-export const DIAL_KEYS = GROUPS.flatMap((g) => g.keys);
+/* Shadow visibility and gesture-controlled zoom still count as preset changes,
+   even though they are no longer represented by dials. */
+export const DIAL_KEYS = [...GROUPS.flatMap((g) => g.keys), "shadows", "zoom"];
 
 export const fmt = (k, v) =>
   k === "turns"

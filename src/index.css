@@ -81,15 +81,15 @@ body {
   font-size: 12px; font-weight: 700; letter-spacing: .14em; color: #f2f2f2;
 }
 .panel > header .keys { margin-left: auto; font-size: 10px; color: var(--txt-3); }
-.theme-toggle {
+.icon-toggle {
   display: grid; place-items: center; width: 24px; height: 24px; padding: 0; flex: none;
   color: var(--txt-2); background: var(--panel-2);
   border: 1px solid var(--line-2); border-radius: 3px; cursor: pointer;
   transition: color .15s, border-color .15s, background .15s;
 }
-.theme-toggle:hover { color: var(--amber); border-color: var(--txt-3); }
-.theme-toggle:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-.theme-toggle svg {
+.icon-toggle:hover, .icon-toggle.on { color: var(--amber); border-color: var(--txt-3); }
+.icon-toggle:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.icon-toggle svg {
   width: 14px; height: 14px; fill: none; stroke: currentColor;
   stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
 }
@@ -124,6 +124,14 @@ body {
 .dial .val { font-size: 11px; color: var(--txt); font-variant-numeric: tabular-nums; }
 .dial svg { cursor: ns-resize; touch-action: none; outline: none; display: block; }
 .dial svg:focus-visible circle { stroke: var(--amber); }
+.toggle-knob {
+  display: block; width: 58px; height: 58px; padding: 0;
+  color: inherit; background: transparent; border: 0; border-radius: 50%;
+  cursor: pointer;
+}
+.toggle-knob svg { cursor: inherit; }
+.toggle-knob:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.toggle-dial .lbl { white-space: nowrap; }
 
 /* ------------------------------ presets ------------------------------ */
 

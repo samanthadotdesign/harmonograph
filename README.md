@@ -49,7 +49,11 @@ something it cannot resolve.
 ## Controls
 
 Drag the canvas to rotate. It snaps to exact axis alignment within about 3°, so
-the flat `xy`, `xz` and `zy` projections are reachable by hand.
+the flat `xy`, `xz` and `zy` projections are reachable by hand. Scroll or pinch
+to zoom. The View section includes labeled controls for wall shadows, slow
+automatic rotation and a looping start-to-end line animation. Automatic
+rotation pauses while you drag, pan or zoom, then continues from the adjusted
+view.
 
 Drag a dial up or down to turn it, shift for fine, double-click to reset it.
 
@@ -59,9 +63,9 @@ Drag a dial up or down to turn it, shift for fine, double-click to reset it.
 | `r` | reset everything |
 | `s` | save a PNG |
 | `t` | switch light / dark |
-| `1`–`0` | recall that preset slot |
-| `shift` + digit | save the current dials into that slot |
-| `alt` + digit | clear that slot |
+| number (`1`–`0`) | recall that preset slot |
+| `Shift` + number | save the current dials into that slot |
+| `Alt` + number | delete that preset |
 
 ### Dials
 
@@ -75,8 +79,6 @@ Drag a dial up or down to turn it, shift for fine, double-click to reset it.
 | `ink` | how dark each pass lands; overlaps accumulate |
 | `width` | stroke weight |
 | `fade` | 0 for flat ink, 1 for a full near/far ramp |
-| `shadows` | strength of the projections on the walls, 0 to hide |
-| `zoom` | |
 
 The four log-scaled dials turn in slider space, so the pointer moves evenly
 around the arc while the number moves exponentially. A quarter turn near the
@@ -99,6 +101,7 @@ src/
   App.jsx               state, shortcuts, persistence, pointer handling
   components/
     Dial.jsx            the rotary control
+    Toggle.jsx          binary controls styled like the dials
     Section.jsx         collapsible panel section
     Presets.jsx         the ten slots
   lib/

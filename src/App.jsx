@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Dial from "./components/Dial.jsx";
+import Toggle from "./components/Toggle.jsx";
 import Section from "./components/Section.jsx";
 import Presets from "./components/Presets.jsx";
 import { buildCurve } from "./lib/curve.js";
@@ -12,6 +13,10 @@ import { loadState, saveState, EMPTY_SLOTS, codeToSlot } from "./lib/storage.js"
 
 const HP = Math.PI / 2;
 const SNAP = 0.05; // radians within which the camera locks to an axis
+const AUTO_ROTATE_SPEED = 0.05; // radians per second; one turn takes about two minutes
+const WHEEL_PAUSE_MS = 500;
+const LINE_DRAW_MS = 12000;
+const LINE_HOLD_MS = 1500;
 const MOBILE_QUERY = "(max-width: 640px), (hover: none) and (pointer: coarse)";
 
 /* snap the camera to exact axis alignment when it comes close, so the flat
@@ -44,6 +49,10 @@ export default function App() {
   const [take, setTake] = useState("");
   const [size, setSize] = useState({ w: 1200, h: 800 });
   const [dragging, setDragging] = useState(false);
+  const [wheelActive, setWheelActive] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(() => boot?.autoRotate === true);
+  const [animateLine, setAnimateLine] = useState(() => boot?.animateLine === true);
+  const [lineProgress, setLineProgress] = useState(() => boot?.animateLine === true ? 0 : 1);
   const [panel, setPanel] = useState(false);
   const [mobile, setMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
   const [panelLift, setPanelLift] = useState(0);
@@ -56,8 +65,12 @@ export default function App() {
   const pointers = useRef(new Map());
   const gesture = useRef(null);
   const liftRef = useRef(0);
+  const wheelStopRef = useRef(null);
+  const persistRef = useRef(null);
 
   const dirty = active >= 0 && slots[active] ? !sameDials(P, slots[active].P) : false;
+  const shadowsOn = P.shadows > 0.005;
+  persistRef.current = { slots, theme, active, autoRotate, animateLine, live: { P, cam } };
 
   /* ------------------------------ actions ----------------------------- */
 
@@ -75,6 +88,13 @@ export default function App() {
     setP(INITIAL);
     setCam(HOME_CAM);
     setActive(-1);
+  }, []);
+
+  const setShadows = useCallback((enabled) => {
+    setP((prev) => ({
+      ...prev,
+      shadows: enabled ? INITIAL.shadows : 0,
+    }));
   }, []);
 
   const savePNG = useCallback(() => {
@@ -159,12 +179,18 @@ export default function App() {
 
   /* ---------------------------- persistence --------------------------- */
 
-  /* Slots and theme are cheap, but the live dials change every animation
-     frame while a knob is turning, so hold the write back a moment. */
+  /* Save control changes after they settle. Camera persistence is separate so
+     continuous auto-rotation does not prevent preset or theme writes. */
   useEffect(() => {
-    const id = setTimeout(() => saveState({ slots, theme, active, live: { P, cam } }), 250);
+    const id = setTimeout(() => saveState(persistRef.current), 250);
     return () => clearTimeout(id);
-  }, [slots, theme, active, P, cam]);
+  }, [slots, theme, active, P, autoRotate, animateLine]);
+
+  useEffect(() => {
+    if (autoRotate) return undefined;
+    const id = setTimeout(() => saveState(persistRef.current), 250);
+    return () => clearTimeout(id);
+  }, [cam, autoRotate]);
 
   /* ------------------------------ drawing ----------------------------- */
 
@@ -182,6 +208,8 @@ export default function App() {
     query.addEventListener("change", onChange);
     return () => query.removeEventListener("change", onChange);
   }, []);
+
+  useEffect(() => () => clearTimeout(wheelStopRef.current), []);
 
   useEffect(() => {
     const from = liftRef.current;
@@ -202,12 +230,47 @@ export default function App() {
     return () => cancelAnimationFrame(frame);
   }, [panel, mobile]);
 
+  useEffect(() => {
+    if (!autoRotate || dragging || wheelActive) return undefined;
+    let frame;
+    let previous = performance.now();
+    const rotate = (now) => {
+      const elapsed = Math.min(50, now - previous) / 1000;
+      previous = now;
+      setCam((value) => ({
+        ...value,
+        yaw: wrap(value.yaw + AUTO_ROTATE_SPEED * elapsed),
+      }));
+      frame = requestAnimationFrame(rotate);
+    };
+    frame = requestAnimationFrame(rotate);
+    return () => cancelAnimationFrame(frame);
+  }, [autoRotate, dragging, wheelActive]);
+
   /* rebuild the point set only when the shape actually changes */
   const curve = useMemo(
     () => buildCurve(P, Math.min(size.w, size.h) * 0.4),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [P.fx, P.fy, P.fz, P.depth, P.sweep, P.turns, P.decay, P.mix, P.phase, size.w, size.h]
   );
+
+  useEffect(() => {
+    if (!animateLine) {
+      setLineProgress(1);
+      return undefined;
+    }
+    setLineProgress(0);
+    let frame;
+    const started = performance.now();
+    const duration = LINE_DRAW_MS + LINE_HOLD_MS;
+    const animate = (now) => {
+      const elapsed = (now - started) % duration;
+      setLineProgress(Math.min(1, elapsed / LINE_DRAW_MS));
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [animateLine, curve]);
 
   /* everything else is a redraw */
   useEffect(() => {
@@ -218,8 +281,9 @@ export default function App() {
     cv.height = Math.round(size.h * dpr);
     render(cv.getContext("2d"), {
       curve, P, cam, W: size.w, H: size.h, dpr, dragging, theme, panelLift,
+      progress: lineProgress,
     });
-  }, [curve, P, cam, size, dragging, theme, panelLift]);
+  }, [curve, P, cam, size, dragging, theme, panelLift, lineProgress]);
 
   const beginMultiGesture = () => {
     const [a, b] = Array.from(pointers.current.values());
@@ -314,6 +378,9 @@ export default function App() {
   };
   const onWheel = (e) => {
     e.preventDefault();
+    setWheelActive(true);
+    clearTimeout(wheelStopRef.current);
+    wheelStopRef.current = setTimeout(() => setWheelActive(false), WHEEL_PAUSE_MS);
     const zoomSpec = SPEC.zoom;
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? size.h : 1;
     const delta = Math.max(-120, Math.min(120, e.deltaY * unit));
@@ -381,7 +448,7 @@ export default function App() {
             <span className="name">HARMONOGRAPH</span>
             <span className="keys">C hide · R reset · S png · T theme</span>
             <button
-              className="theme-toggle"
+              className="icon-toggle theme-toggle"
               onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
               aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
               title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
@@ -422,6 +489,14 @@ export default function App() {
                 </div>
               </Section>
             ))}
+
+            <Section title="View" open={open.View} onToggle={() => toggle("View")}>
+              <div className="dials">
+                <Toggle label="shadows" checked={shadowsOn} onChange={setShadows} />
+                <Toggle label="auto rotation" checked={autoRotate} onChange={setAutoRotate} />
+                <Toggle label="line animation" checked={animateLine} onChange={setAnimateLine} />
+              </div>
+            </Section>
 
           </div>
 
