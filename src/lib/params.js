@@ -29,7 +29,7 @@ export const INITIAL = {
   mix: 1, phase: 0.25,
 };
 
-export const HOME_CAM = { yaw: 0.62, pitch: 0.34 };
+export const HOME_CAM = { yaw: 0.62, pitch: 0.34, panX: 0, panY: 0 };
 
 export const SPEC = Object.fromEntries(
   [

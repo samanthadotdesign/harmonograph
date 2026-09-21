@@ -4,7 +4,7 @@ import { THEMES } from "./theme.js";
    curve. Everything is recomputed from the point set each time, which is cheap
    enough that rotating never has to touch the sampler. */
 
-export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme }) {
+export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme, panelLift = 0 }) {
   const T = THEMES[theme] ?? THEMES.light;
   const { pts, n, sx, sy, sz, ax, ay } = curve;
 
@@ -13,8 +13,9 @@ export function render(ctx, { curve, P, cam, W, H, dpr, dragging, theme }) {
   const cx = Math.cos(cam.pitch);
   const sm = Math.sin(cam.pitch);
   const S = Math.min(W, H) * 0.4 * P.zoom * 0.58;
-  const ox = W / 2;
-  const oy = H / 2;
+  const panScale = Math.min(W, H);
+  const ox = W / 2 + (cam.panX ?? 0) * panScale;
+  const oy = H / 2 + (cam.panY ?? 0) * panScale - panelLift * H * 0.25;
 
   const depthOf = (x, y, z) => y * sm + (-x * sn + z * cy) * cx;
   const project = (x, y, z, o) => {
