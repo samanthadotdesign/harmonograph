@@ -124,14 +124,19 @@ body {
 .dial .val { font-size: 11px; color: var(--txt); font-variant-numeric: tabular-nums; }
 .dial svg { cursor: ns-resize; touch-action: none; outline: none; display: block; }
 .dial svg:focus-visible circle { stroke: var(--amber); }
+.toggle-control {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  user-select: none;
+}
+.toggle-control .lbl { font-size: 11px; color: var(--txt-2); white-space: nowrap; }
+.toggle-control .val { font-size: 11px; color: var(--txt); font-variant-numeric: tabular-nums; }
 .toggle-knob {
-  display: block; width: 58px; height: 58px; padding: 0;
-  color: inherit; background: transparent; border: 0; border-radius: 50%;
+  display: grid; place-items: center; width: 58px; height: 40px; padding: 0;
+  color: inherit; background: transparent; border: 0; border-radius: 29px;
   cursor: pointer;
 }
-.toggle-knob svg { cursor: inherit; }
+.toggle-knob svg { display: block; cursor: inherit; touch-action: manipulation; }
 .toggle-knob:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-.toggle-dial .lbl { white-space: nowrap; }
 
 /* ------------------------------ presets ------------------------------ */
 
