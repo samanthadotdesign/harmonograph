@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Verifies the dev server is reachable on the shared PORT.
+set -euo pipefail
+
+set -a
+. "$(dirname "$0")/env"
+set +a
+
+url="http://localhost:${PORT}"
+echo "verify: checking ${url}"
+
+for i in $(seq 1 30); do
+  if curl -fsS -o /dev/null "$url"; then
+    echo "verify: dev server is up at ${url}"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "verify: dev server did not respond at ${url}" >&2
+exit 1

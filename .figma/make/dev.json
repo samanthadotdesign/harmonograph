@@ -1,0 +1,69 @@
+{
+  "pointAndEdit": {
+    "priorityPaths": {
+      "prefer": [
+        "src/App.jsx",
+        "src/components/**/*.jsx"
+      ],
+      "deprioritize": [
+        "src/lib/**/*.js",
+        "src/index.css"
+      ],
+      "exclude": [
+        "dist/**",
+        "node_modules/**",
+        "**/*.figma.ts",
+        "**/*.figma.tsx",
+        "**/*.figma.js",
+        "**/*.figma.jsx",
+        "**/*.figma.template.*"
+      ]
+    },
+    "libraryPaths": {
+      "local": [],
+      "external": []
+    },
+    "pathClassification": {
+      "classifier": "sonnet"
+    },
+    "exclusions": [
+      {
+        "glob": "dist/**",
+        "reason": "Build output — not source files and should never be used as a point-and-edit anchor."
+      },
+      {
+        "glob": "node_modules/**",
+        "reason": "Third-party installed packages; not owned by this project and not valid point-and-edit anchors."
+      },
+      {
+        "glob": "**/*.figma.ts",
+        "reason": "Figma mapping files are not UI source anchors per classification rules."
+      },
+      {
+        "glob": "**/*.figma.tsx",
+        "reason": "Figma mapping files are not UI source anchors per classification rules."
+      },
+      {
+        "glob": "**/*.figma.js",
+        "reason": "Figma mapping files are not UI source anchors per classification rules."
+      },
+      {
+        "glob": "**/*.figma.jsx",
+        "reason": "Figma mapping files are not UI source anchors per classification rules."
+      },
+      {
+        "glob": "**/*.figma.template.*",
+        "reason": "Figma mapping files are not UI source anchors per classification rules."
+      }
+    ],
+    "generated": {
+      "schemaVersion": 2,
+      "source": "setup-agent.point-and-edit-path-classifier",
+      "prompt": "same-turn-setup-subagent-v5",
+      "model": "claude-sonnet-4-6",
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "confidence": 0.97,
+      "explanation": "This is a compact single-app React+Vite project with a clear, flat source tree; all UI composition lives in src/App.jsx and src/components/, with no shared library, monorepo complexity, test files, or ambiguous paths to reduce confidence."
+    }
+  }
+}

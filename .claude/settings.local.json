@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(mkdir -p .figma/make && echo created)",
+      "Bash(chmod +x .figma/make/setup .figma/make/install .figma/make/dev .figma/make/verify)",
+      "Bash(.figma/make/setup)",
+      "Bash(.figma/make/install)"
+    ]
+  }
+}

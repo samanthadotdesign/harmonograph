@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Runs once on first open of the project. System-level dependencies go here.
+# This project only needs Node.js + npm, which the host already provides,
+# so there is nothing to install. Cached after the first successful run.
+set -euo pipefail
+
+echo "setup: verifying toolchain"
+command -v node >/dev/null 2>&1 || { echo "node not found on PATH" >&2; exit 1; }
+command -v npm  >/dev/null 2>&1 || { echo "npm not found on PATH" >&2; exit 1; }
+echo "setup: node $(node -v), npm $(npm -v)"
+echo "setup: done"

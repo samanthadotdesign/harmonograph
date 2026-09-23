@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Starts the Vite dev server. Runs for the whole session; killed on close.
+set -euo pipefail
+
+cd "$(dirname "$0")/../.."
+
+# Load PORT (and other vars) from the env file next to this script.
+set -a
+. "$(dirname "$0")/env"
+set +a
+
+# Bind Vite to the shared PORT so it matches FIGMA_MAKE_URL.
+exec npx vite --host --port "$PORT" --strictPort
